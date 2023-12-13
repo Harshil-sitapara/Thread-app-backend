@@ -1,6 +1,7 @@
 import express from "express";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
+import { prismaClient } from "./lib/db";
 
 async function init() {
   const app = express();
@@ -15,11 +16,40 @@ async function init() {
         hello:String
         say(name: String):String
     }
+    type Mutation{
+      createUser(firstName:String!,lastName:String!,email:String,password:String!):Boolean
+    }
     `, //schema
     resolvers: {
       Query: {
         hello: () => `Hey, i am graphql`,
         say: (_, { name }: { name: String }) => `Hello ${name}`,
+      },
+      Mutation: {
+        createUser: async (
+          _,
+          {
+            firstName,
+            lastName,
+            email,
+            password,
+          }: {
+            firstName: string;
+            lastName: string;
+            email: string;
+            password: string;
+          }
+        ) => {
+          await prismaClient.user.create({
+            data: {
+              email,
+              firstName,
+              lastName,
+              password,
+              salt: "random_salt",
+            },
+          });
+        },
       },
     },
   });
@@ -38,3 +68,22 @@ async function init() {
   });
 }
 init();
+function async(
+  _: any,
+  arg1: { firstName: any; lastName: any; email: any; password: any },
+  arg2: { firstName: any; lastName: any; email: any; password: any }
+):
+  | any
+  | import("@graphql-tools/utils").IFieldResolver<
+      any,
+      import("@apollo/server").BaseContext,
+      any,
+      any
+    >
+  | import("@graphql-tools/utils").IFieldResolverOptions<
+      any,
+      import("@apollo/server").BaseContext,
+      any
+    > {
+  throw new Error("Function not implemented.");
+}

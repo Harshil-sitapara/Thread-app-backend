@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const server_1 = require("@apollo/server");
 const express4_1 = require("@apollo/server/express4");
+const db_1 = require("./lib/db");
 async function init() {
     const app = (0, express_1.default)();
     const PORT = Number(process.env.PORT) || 8000;
@@ -17,11 +18,27 @@ async function init() {
         hello:String
         say(name: String):String
     }
+    type Mutation{
+      createUser(firstName:String!,lastName:String!,email:String,password:String!):Boolean
+    }
     `, //schema
         resolvers: {
             Query: {
                 hello: () => `Hey, i am graphql`,
                 say: (_, { name }) => `Hello ${name}`,
+            },
+            Mutation: {
+                createUser: async (_, { firstName, lastName, email, password, }) => {
+                    await db_1.prismaClient.user.create({
+                        data: {
+                            email,
+                            firstName,
+                            lastName,
+                            password,
+                            salt: "random_salt",
+                        },
+                    });
+                },
             },
         },
     });
@@ -36,3 +53,6 @@ async function init() {
     });
 }
 init();
+function async(_, arg1, arg2) {
+    throw new Error("Function not implemented.");
+}
